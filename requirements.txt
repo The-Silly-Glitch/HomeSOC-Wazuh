@@ -1,0 +1,2 @@
+# HomeSOC-Wazuh Python Automation Dependencies
+requests>=2.31.0
