@@ -1,0 +1,36 @@
+# HomeSOC Wazuh Ubuntu Agent Compose Stack
+
+services:
+  wazuh.agent.ubuntu:
+    build:
+      context: .
+      dockerfile: Dockerfile.ubuntu-agent
+    image: homesoc/ubuntu-agent:${WAZUH_VERSION:-4.11.2}
+    container_name: wazuh.agent.ubuntu
+    hostname: ubuntu-endpoint-01
+    restart: unless-stopped
+    environment:
+      - WAZUH_MANAGER=${WAZUH_MANAGER:-wazuh.manager}
+      - WAZUH_AGENT_NAME=${WAZUH_AGENT_NAME:-ubuntu-endpoint-01}
+      - WAZUH_AGENT_GROUP=${WAZUH_AGENT_GROUP:-default}
+      - WAZUH_REGISTRATION_SERVER=${WAZUH_REGISTRATION_SERVER:-wazuh.manager}
+      - WAZUH_REGISTRATION_PORT=${WAZUH_REGISTRATION_PORT:-1515}
+    volumes:
+      - ./configs/agent/ossec-agent.conf:/var/ossec/etc/ossec.conf:ro
+      - ./configs/agent/sca:/var/ossec/ruleset/sca/custom:ro
+      - agent_monitored_data:/monitored
+    networks:
+      - wazuh-net
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+
+volumes:
+  agent_monitored_data:
+
+networks:
+  wazuh-net:
+    name: wazuh-net
+    external: true

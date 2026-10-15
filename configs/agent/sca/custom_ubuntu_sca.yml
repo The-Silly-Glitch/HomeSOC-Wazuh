@@ -1,0 +1,50 @@
+policy:
+  id: "custom_ubuntu_sca"
+  file: "custom_ubuntu_sca.yml"
+  name: "HomeSOC Custom Ubuntu Security Assessment"
+  description: "Baseline security checks for HomeSOC Ubuntu container endpoints"
+  references:
+    - https://www.cisecurity.org/cis-benchmarks/
+
+requirements:
+  title: "Verify Linux Platform"
+  description: "Checks that this is a Linux host"
+  condition: "any"
+  rules:
+    - 'f:/etc/os-release'
+
+checks:
+  - id: 20001
+    title: "Ensure root login via SSH is disabled"
+    description: "PermitRootLogin specifies whether root can log in directly using SSH."
+    rationale: "Disallowing root login over SSH reduces attack surface from automated brute-force attacks."
+    remediation: "Edit /etc/ssh/sshd_config and set PermitRootLogin no"
+    compliance:
+      - cis: ["5.2.10"]
+      - cis_csc_v8: ["4.1"]
+    condition: "none"
+    rules:
+      - 'f:/etc/ssh/sshd_config -> r:^PermitRootLogin\s+yes'
+
+  - id: 20002
+    title: "Ensure /etc/shadow file permissions are restrictive"
+    description: "The /etc/shadow file contains user password hashes and authentication parameters."
+    rationale: "World or group-readable shadow files expose password hashes to local unprivileged users."
+    remediation: "chmod 0640 /etc/shadow && chown root:shadow /etc/shadow"
+    compliance:
+      - cis: ["6.1.3"]
+      - nist_800_53: ["AC-6"]
+    condition: "all"
+    rules:
+      - 'f:/etc/shadow -> !p:0640'
+
+  - id: 20003
+    title: "Ensure password expiration is enforced"
+    description: "Password maximum aging should be 90 days or less."
+    rationale: "Periodic password rotation reduces risk from forgotten or compromised credentials."
+    remediation: "Set PASS_MAX_DAYS 90 in /etc/login.defs"
+    compliance:
+      - cis: ["5.4.1.1"]
+    condition: "all"
+    rules:
+      - 'f:/etc/login.defs -> r:^PASS_MAX_DAYS\s+(\d+) -> compare <= 90'

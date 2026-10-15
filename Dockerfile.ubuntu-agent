@@ -1,0 +1,32 @@
+# Ubuntu Endpoint Agent for HomeSOC Wazuh Lab
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV WAZUH_VERSION=4.11.2
+
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    apt-transport-https \
+    gnupg2 \
+    procps \
+    net-tools \
+    iputils-ping \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add Wazuh GPG key and APT repository
+RUN curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | gpg --no-default-keyring --keyring gnupg-ring:/usr/share/keyrings/wazuh.gpg --import \
+    && chmod 644 /usr/share/keyrings/wazuh.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/wazuh.gpg] https://packages.wazuh.com/4.x/apt/ stable main" > /etc/apt/sources.list.d/wazuh.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends wazuh-agent=${WAZUH_VERSION}-1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create monitored directory for FIM demonstration
+RUN mkdir -p /monitored /var/ossec/ruleset/sca/custom
+
+COPY scripts/entrypoint-agent.sh /entrypoint-agent.sh
+RUN chmod +x /entrypoint-agent.sh
+
+ENTRYPOINT ["/entrypoint-agent.sh"]
