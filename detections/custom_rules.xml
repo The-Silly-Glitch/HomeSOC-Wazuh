@@ -1,7 +1,7 @@
 <!-- Custom Detection Rules mapped to MITRE ATT&CK -->
 <!-- Location: /var/ossec/etc/rules/custom_rules.xml -->
 
-<group name="windows,windows_simulation,sysmon,endpoint,">
+<group name="windows,windows_simulation,sysmon,endpoint,syscheck,custom_fim,">
 
   <!-- Rule 100001: Ingestion Base Rule -->
   <rule id="100001" level="3">
@@ -67,9 +67,6 @@
     <group>attack.discovery,attack.t1082,</group>
   </rule>
 
-</group>
-
-<group name="syscheck,custom_fim,">
   <!-- Rule 100010: MITRE T1565.001 - Critical File Modification -->
   <rule id="100010" level="7">
     <if_group>syscheck</if_group>
@@ -80,4 +77,5 @@
     </mitre>
     <group>attack.defense_evasion,attack.t1565.001,</group>
   </rule>
+
 </group>
