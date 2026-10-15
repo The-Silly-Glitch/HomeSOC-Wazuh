@@ -1,8 +1,8 @@
 Rule ID,Rule Description,MITRE Tactic,MITRE ID,MITRE Technique Name,Severity Level
-100001,Simulated Windows Event Ingestion Base Rule,Execution,T1059,Command and Scripting Interpreter,3
-100002,Suspicious PowerShell Execution or Encoded Command,Execution,T1059.001,Command and Scripting Interpreter: PowerShell,8
-100003,Persistence via Scheduled Task Creation,Persistence,T1053.005,Scheduled Task/Job: Scheduled Task,7
-100004,Suspicious Remote Privileged Account Logon,Initial Access,T1078,Valid Accounts,8
-100005,LSASS Memory Access - Potential Credential Dumping,Credential Access,T1003.001,OS Credential Dumping: LSASS Memory,12
-100006,System Information Discovery via Command Line,Discovery,T1082,System Information Discovery,4
-100010,Critical Monitored Directory File Integrity Alert,Defense Evasion,T1565.001,Data Manipulation: Stored Data Manipulation,7
+100100,Simulated Windows Event Ingestion Base Rule,Execution,T1059,Command and Scripting Interpreter,3
+100101,Suspicious PowerShell Execution or Encoded Command,Execution,T1059.001,Command and Scripting Interpreter: PowerShell,8
+100102,Persistence via Scheduled Task Creation,Persistence,T1053.005,Scheduled Task/Job: Scheduled Task,7
+100103,Suspicious Remote Privileged Account Logon,Initial Access,T1078,Valid Accounts,8
+100104,LSASS Memory Access - Potential Credential Dumping,Credential Access,T1003.001,OS Credential Dumping: LSASS Memory,12
+100105,System Information Discovery via Command Line,Discovery,T1082,System Information Discovery,4
+100110,Critical Monitored Directory File Integrity Alert,Defense Evasion,T1565.001,Data Manipulation: Stored Data Manipulation,7

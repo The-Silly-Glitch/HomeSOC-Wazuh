@@ -9,6 +9,7 @@ import argparse
 import collections
 import json
 import os
+import subprocess
 import sys
 
 
@@ -130,6 +131,32 @@ def print_report(summary, alerts, show_details=False):
             print(f"[{ts}] Lvl {lvl:2d} (Rule {rid:6s}) [{mitre:10s}] {agent}: {desc[:40]}")
 
 
+def read_alerts_from_manager():
+    """Attempt to read alerts.json from the running Wazuh manager container."""
+    try:
+        result = subprocess.run(
+            ["docker", "exec", "wazuh.manager", "cat", "/var/ossec/logs/alerts/alerts.json"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+        if result.returncode != 0:
+            return None
+        alerts = []
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                alerts.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+        return alerts
+    except Exception:
+        return None
+
+
 def main():
     parser = argparse.ArgumentParser(description="HomeSOC Wazuh Alerts JSON Parser")
     parser.add_argument("--file", default="/var/ossec/logs/alerts/alerts.json", help="Path to alerts.json")
@@ -142,28 +169,56 @@ def main():
 
     args = parser.parse_args()
 
-    # Fallback to local sample or current directory if default path doesn't exist
+    # Try the manager container first, then fall back to local files
+    alerts = None
     target_file = args.file
     if not os.path.exists(target_file):
-        fallbacks = ["logs/alerts.json", "alerts.json", "logs/sample_alerts.json"]
-        for fb in fallbacks:
-            if os.path.exists(fb):
-                target_file = fb
-                break
+        alerts = read_alerts_from_manager()
+        if alerts is None:
+            fallbacks = ["logs/alerts.json", "alerts.json", "logs/sample_alerts.json"]
+            for fb in fallbacks:
+                if os.path.exists(fb):
+                    target_file = fb
+                    break
 
-    try:
-        alerts = parse_alerts_file(
-            target_file,
-            min_level=args.min_level,
-            rule_filter=args.rule,
-            mitre_filter=args.mitre,
-            agent_filter=args.agent
-        )
-    except FileNotFoundError:
-        # If no alerts.json exists yet, create an empty demonstration structure
-        alerts = []
-        if not args.json:
-            print(f"[-] Alerts file not found at '{args.file}'. Showing empty summary structure.")
+    if alerts is None:
+        try:
+            alerts = parse_alerts_file(
+                target_file,
+                min_level=args.min_level,
+                rule_filter=args.rule,
+                mitre_filter=args.mitre,
+                agent_filter=args.agent
+            )
+        except FileNotFoundError:
+            alerts = []
+            if not args.json:
+                print(f"[-] Alerts file not found at '{args.file}'. Showing empty summary structure.")
+    else:
+        # Apply filters to in-memory manager alerts
+        filtered = []
+        for alert in alerts:
+            rule = alert.get("rule", {})
+            level = rule.get("level", 0)
+            rule_id = str(rule.get("id", ""))
+            agent_name = alert.get("agent", {}).get("name", "manager")
+            mitre_info = rule.get("mitre", {})
+            mitre_ids = mitre_info.get("id", [])
+            if isinstance(mitre_ids, str):
+                mitre_ids = [mitre_ids]
+
+            if level < args.min_level:
+                continue
+            if args.rule and rule_id != str(args.rule):
+                continue
+            if args.agent and args.agent.lower() not in agent_name.lower():
+                continue
+            if args.mitre:
+                match = any(args.mitre.upper() in mid.upper() for mid in mitre_ids)
+                if not match:
+                    continue
+            filtered.append(alert)
+        alerts = filtered
 
     summary = generate_summary(alerts)
 

@@ -8,6 +8,7 @@ Supports both live Wazuh Manager API testing and offline simulated verification 
 import argparse
 import json
 import os
+import subprocess
 import sys
 import time
 
@@ -23,7 +24,7 @@ TEST_CASES = [
     {
         "id": "TC-01",
         "name": "MITRE T1059.001 - Suspicious PowerShell Command",
-        "expected_rule_id": 100002,
+        "expected_rule_id": 100101,
         "mitre_id": "T1059.001",
         "severity": 8,
         "sample_event": {
@@ -36,7 +37,7 @@ TEST_CASES = [
     {
         "id": "TC-02",
         "name": "MITRE T1053.005 - Malicious Scheduled Task Creation",
-        "expected_rule_id": 100003,
+        "expected_rule_id": 100102,
         "mitre_id": "T1053.005",
         "severity": 7,
         "sample_event": {
@@ -49,7 +50,7 @@ TEST_CASES = [
     {
         "id": "TC-03",
         "name": "MITRE T1078 - Remote Privileged Account Logon",
-        "expected_rule_id": 100004,
+        "expected_rule_id": 100103,
         "mitre_id": "T1078",
         "severity": 8,
         "sample_event": {
@@ -63,7 +64,7 @@ TEST_CASES = [
     {
         "id": "TC-04",
         "name": "MITRE T1003.001 - LSASS Memory Access / Credential Dumping",
-        "expected_rule_id": 100005,
+        "expected_rule_id": 100104,
         "mitre_id": "T1003.001",
         "severity": 12,
         "sample_event": {
@@ -77,7 +78,7 @@ TEST_CASES = [
     {
         "id": "TC-05",
         "name": "MITRE T1565.001 - FIM Critical Monitored Directory Alert",
-        "expected_rule_id": 100010,
+        "expected_rule_id": 100110,
         "mitre_id": "T1565.001",
         "severity": 7,
         "sample_event": {
@@ -130,6 +131,32 @@ class WazuhAPIClient:
         return resp.json()
 
 
+def fetch_alerts_from_manager(limit=200):
+    """Read alerts.json directly from the running Wazuh manager container."""
+    try:
+        result = subprocess.run(
+            ["docker", "exec", "wazuh.manager", "cat", "/var/ossec/logs/alerts/alerts.json"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+        if result.returncode != 0:
+            return None
+        alerts = []
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                alerts.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+        return alerts[-limit:]
+    except Exception:
+        return None
+
+
 def run_offline_verification():
     """
     Validates detection rule logic and event matching offline
@@ -152,15 +179,15 @@ def run_offline_verification():
 
         # Simulate rule engine matching
         match = False
-        if expected_rule == 100002 and "-enc" in event.get("CommandLine", ""):
+        if expected_rule == 100101 and "-enc" in event.get("CommandLine", ""):
             match = True
-        elif expected_rule == 100003 and event.get("EventID") == 4698:
+        elif expected_rule == 100102 and event.get("EventID") == 4698:
             match = True
-        elif expected_rule == 100004 and event.get("EventID") == 4624 and event.get("LogonType") == 10:
+        elif expected_rule == 100103 and event.get("EventID") == 4624 and event.get("LogonType") == 10:
             match = True
-        elif expected_rule == 100005 and event.get("EventID") == 10 and "lsass.exe" in event.get("TargetImage", ""):
+        elif expected_rule == 100104 and event.get("EventID") == 10 and "lsass.exe" in event.get("TargetImage", ""):
             match = True
-        elif expected_rule == 100010 and "/monitored/" in event.get("syscheck", {}).get("path", ""):
+        elif expected_rule == 100110 and "/monitored/" in event.get("syscheck", {}).get("path", ""):
             match = True
 
         if match:
@@ -190,10 +217,34 @@ def run_live_verification(api_url, api_user, api_password):
     status = client.check_manager_status()
     print(f"[+] Manager Status: {json.dumps(status.get('data', {}), indent=2)}")
 
-    print("[*] Querying alerts via API...")
-    alerts = client.query_alerts()
-    print(f"[+] Successfully queried alerts endpoint. Status: {alerts.get('message', 'OK')}")
-    return 0
+    print("[*] Reading alerts from Wazuh manager container...")
+    alerts = fetch_alerts_from_manager(limit=500)
+    if alerts is None:
+        print("[-] Could not read alerts from manager container. Falling back to offline rule validation.")
+        return run_offline_verification()
+
+    print(f"[+] Read {len(alerts)} recent alerts from manager container.")
+
+    passed = 0
+    failed = 0
+    for tc in TEST_CASES:
+        tc_id = tc["id"]
+        expected_rule = tc["expected_rule_id"]
+        mitre_id = tc["mitre_id"]
+        found = any(
+            str(a.get("rule", {}).get("id")) == str(expected_rule)
+            for a in alerts
+        )
+        if found:
+            print(f"    [+] PASS {tc_id}: Rule {expected_rule} (MITRE {mitre_id}) fired.")
+            passed += 1
+        else:
+            print(f"    [-] FAIL {tc_id}: Rule {expected_rule} (MITRE {mitre_id}) not found in recent alerts.")
+            failed += 1
+
+    print("-" * 75)
+    print(f"[+] Live Verification Complete: {passed}/{len(TEST_CASES)} passed, {failed} failed.")
+    return 0 if failed == 0 else 1
 
 
 def main():

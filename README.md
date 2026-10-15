@@ -54,13 +54,14 @@ HomeSOC-Wazuh/
 ├── docker-compose.yml           # Core Wazuh stack (Manager, Indexer, Dashboard)
 ├── docker-compose.agents.yml    # Endpoint agent stack
 ├── requirements.txt             # Python automation dependencies
-├── configs/
+├── config/
 │   ├── agent/                   # Agent configuration & SCA policies
-│   ├── certs/                   # Certificate generator configurations
-│   ├── decoders/                # Custom Wazuh decoders for simulated events
-│   └── wazuh_cluster/           # Manager & indexer configuration files
-├── detections/
-│   └── custom_rules.xml         # Custom detection rules with MITRE mappings
+│   ├── certs.yml                # Certificate generator configuration
+│   ├── wazuh_cluster/           # Manager configuration
+│   ├── wazuh_dashboard/         # Dashboard configuration
+│   ├── wazuh_decoders/          # Custom Wazuh decoders for simulated events
+│   ├── wazuh_indexer/           # Indexer configuration
+│   └── wazuh_rules/             # Custom detection rules with MITRE mappings
 ├── docs/
 │   ├── architecture.md          # In-depth architectural details
 │   ├── mitre_mapping.csv        # Comprehensive MITRE ATT&CK mapping table
@@ -99,13 +100,13 @@ HomeSOC-Wazuh/
 
 | Rule ID | Technique Name | MITRE ID | Tactic | Description |
 |---|---|---|---|---|
-| `100001` | Generic Windows Simulation | — | Execution / Discovery | Ingestion base rule for simulated Windows logs |
-| `100002` | PowerShell / Command-Line Interface | `T1059.001` | Execution | Encoded PowerShell / suspicious CLI execution detected |
-| `100003` | Scheduled Task / Job | `T1053.005` | Persistence / Privilege Escalation | Malicious persistence created via `schtasks` |
-| `100004` | Valid Accounts / Admin Logon | `T1078` | Initial Access / Defense Evasion | Anomalous privileged account logon (Type 10 Remote) |
-| `100005` | OS Credential Dumping: LSASS Memory | `T1003.001` | Credential Access | Suspicious process reading `lsass.exe` memory |
-| `100006` | System Information Discovery | `T1082` | Discovery | Reconnaissance commands (`systeminfo`, `whoami /all`) |
-| `100010` | File Integrity Monitoring (FIM) Alert | `T1565.001` | Impact / Defense Evasion | Unauthorized modification to `/monitored` or `/etc` |
+| `100100` | Generic Windows Simulation | — | Execution / Discovery | Ingestion base rule for simulated Windows logs |
+| `100101` | PowerShell / Command-Line Interface | `T1059.001` | Execution | Encoded PowerShell / suspicious CLI execution detected |
+| `100102` | Scheduled Task / Job | `T1053.005` | Persistence / Privilege Escalation | Malicious persistence created via `schtasks` |
+| `100103` | Valid Accounts / Admin Logon | `T1078` | Initial Access / Defense Evasion | Anomalous privileged account logon (Type 10 Remote) |
+| `100104` | OS Credential Dumping: LSASS Memory | `T1003.001` | Credential Access | Suspicious process reading `lsass.exe` memory |
+| `100105` | System Information Discovery | `T1082` | Discovery | Reconnaissance commands (`systeminfo`, `whoami /all`) |
+| `100110` | File Integrity Monitoring (FIM) Alert | `T1565.001` | Impact / Defense Evasion | Unauthorized modification to `/monitored` or `/etc` |
 
 A full CSV table is maintained at [`docs/mitre_mapping.csv`](file:///home/honeysh/Projects/HomeSOC-Wazuh/docs/mitre_mapping.csv).
 
@@ -122,7 +123,7 @@ Ensure Docker and Docker Compose (v2.20+) are installed.
 
 ### 2. Generate TLS Certificates
 ```bash
-docker compose -f configs/certs/generate-indexer-certs.yml run --rm generator
+docker compose -f generate-indexer-certs.yml run --rm generator
 ```
 
 ### 3. Start Wazuh SIEM Stack

@@ -16,8 +16,8 @@ services:
       - WAZUH_REGISTRATION_SERVER=${WAZUH_REGISTRATION_SERVER:-wazuh.manager}
       - WAZUH_REGISTRATION_PORT=${WAZUH_REGISTRATION_PORT:-1515}
     volumes:
-      - ./configs/agent/ossec-agent.conf:/var/ossec/etc/ossec.conf:ro
-      - ./configs/agent/sca:/var/ossec/ruleset/sca/custom:ro
+      - ./config/agent/ossec-agent.conf:/var/ossec/etc/ossec.conf:ro
+      - ./config/agent/sca:/var/ossec/ruleset/sca/custom:ro
       - agent_monitored_data:/monitored
     networks:
       - wazuh-net

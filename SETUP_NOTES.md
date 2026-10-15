@@ -6,15 +6,13 @@ This document records host-specific findings, environment configurations, and op
 
 ## 1. Host Environment & Tooling Discoveries
 
-- **Operating System & Python**: Host running Linux with Python 3.14.7.
+- **Operating System & Python**: Host running Ubuntu 26.04.1 LTS with Python 3.12.x.
 - **Docker & Docker Compose CLI**:
-  - The standard Docker and Compose binaries were not initially present in `/usr/bin`.
-  - Installed official static standalone Docker CLI (`v27.3.1`) and Docker Compose (`v2.30.3`) in `~/.local/bin/` with `~/.docker/cli-plugins/docker-compose`.
-  - Both `docker compose config` and `docker compose -f docker-compose.agents.yml config` were thoroughly validated.
-- **Directory Layout Tool**:
-  - `tree` was not installed natively. Implemented a Python-based utility in `~/.local/bin/tree` supporting `-L` depth flags to satisfy acceptance checks.
-- **GitHub CLI**:
-  - Standalone `gh` binary (`v2.62.0`) installed to `~/.local/bin/gh`.
+  - Docker was not initially installed.
+  - Installed official Docker Engine (`docker-ce` 29.9.1) and Docker Compose plugin via the Docker APT repository.
+  - Added user `honeysh` to the `docker` group.
+  - Because group membership does not propagate to existing non-login shells, Docker commands are run with `sg docker -c '...'` during automated setup.
+- **GitHub CLI**: `gh` binary installed to `~/.local/bin/gh` but not authenticated; repository push done over SSH.
 
 ---
 
@@ -34,9 +32,9 @@ sudo sysctl -p
 ### TLS Certificate Generation
 Before launching the stack for the first time, generate root CA and node certificates:
 ```bash
-docker compose -f configs/certs/generate-indexer-certs.yml run --rm generator
+docker compose -f generate-indexer-certs.yml run --rm generator
 ```
-Generated certificates reside in `configs/wazuh_indexer_ssl_certs/` and are excluded from Git by `.gitignore`.
+Generated certificates reside in `config/wazuh_indexer_ssl_certs/` and are excluded from Git by `.gitignore`.
 
 ---
 
@@ -45,7 +43,7 @@ Generated certificates reside in `configs/wazuh_indexer_ssl_certs/` and are excl
 ### Ubuntu Agent Auto-Enrollment
 - The Ubuntu agent uses `Dockerfile.ubuntu-agent` with `wazuh-agent=4.11.2-1`.
 - Auto-enrollment is orchestrated via `scripts/entrypoint-agent.sh`, querying the Manager's Authd service on port 1515.
-- The agent configuration (`configs/agent/ossec-agent.conf`) sets up real-time FIM on `/monitored` and links the custom SCA policy `configs/agent/sca/custom_ubuntu_sca.yml`.
+- The agent configuration (`config/agent/ossec-agent.conf`) sets up real-time FIM on `/monitored` and links the custom SCA policy `config/agent/sca/custom_ubuntu_sca.yml`.
 
 ### Windows Event Simulation & Ingestion
 - `scripts/windows_event_simulator.py` generates high-fidelity synthetic Windows events:
@@ -54,7 +52,7 @@ Generated certificates reside in `configs/wazuh_indexer_ssl_certs/` and are excl
   - **T1078**: Anomalous remote privileged logon (LogonType 10, Event ID 4624)
   - **T1003.001**: LSASS memory access by credential dumpers (Sysmon Event ID 10)
   - **T1082**: Reconnaissance discovery commands (Event ID 1)
-- The Wazuh Manager configuration (`configs/wazuh_cluster/wazuh_manager.conf`) is configured to ingest these events via:
+- The Wazuh Manager configuration (`config/wazuh_cluster/wazuh_manager.conf`) is configured to ingest these events via:
   1. Localfile JSON monitor at `/var/ossec/logs/windows_simulated.json`
   2. Syslog remote listener on UDP port 514
 

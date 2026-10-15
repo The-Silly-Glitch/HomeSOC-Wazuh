@@ -13,10 +13,8 @@ echo "    Manager:             ${WAZUH_MANAGER}"
 echo "    Agent Name:          ${WAZUH_AGENT_NAME}"
 echo "    Registration Server: ${WAZUH_REGISTRATION_SERVER}:${WAZUH_REGISTRATION_PORT}"
 
-# Configure manager IP/hostname in ossec.conf if present
-if [ -f /var/ossec/etc/ossec.conf ]; then
-    sed -i "s|<address>.*</address>|<address>${WAZUH_MANAGER}</address>|g" /var/ossec/etc/ossec.conf
-fi
+# ossec.conf is mounted read-only with the manager address already set.
+# If you need dynamic manager override, rebuild the image or use envsubst here.
 
 # Auto-enrollment using agent-auth if not already enrolled
 if [ ! -s /var/ossec/etc/client.keys ]; then

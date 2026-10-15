@@ -9,6 +9,7 @@ import argparse
 import datetime
 import json
 import os
+import subprocess
 import sys
 import time
 
@@ -85,6 +86,32 @@ def fetch_from_file(file_path, limit=10):
     return alerts[-limit:]
 
 
+def fetch_from_manager(limit=10):
+    """Read alerts.json directly from the running Wazuh manager container."""
+    try:
+        result = subprocess.run(
+            ["docker", "exec", "wazuh.manager", "cat", "/var/ossec/logs/alerts/alerts.json"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+        if result.returncode != 0:
+            return None
+        alerts = []
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                alerts.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+        return alerts[-limit:]
+    except Exception:
+        return None
+
+
 def render_dashboard(alerts, source_desc):
     now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print("\033[2J\033[H", end="")  # Clear screen and move cursor to home
@@ -135,8 +162,12 @@ def main():
     args = parser.parse_args()
 
     while True:
-        alerts = fetch_from_api(args.api_url, args.api_user, args.api_password, limit=args.limit)
-        source_desc = "Wazuh REST API"
+        alerts = fetch_from_manager(limit=args.limit)
+        source_desc = "Wazuh Manager alerts.json"
+
+        if alerts is None:
+            alerts = fetch_from_api(args.api_url, args.api_user, args.api_password, limit=args.limit)
+            source_desc = "Wazuh REST API"
 
         if alerts is None:
             alerts = fetch_from_file(args.file, limit=args.limit)
