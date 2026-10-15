@@ -1,0 +1,25 @@
+<!-- Custom Wazuh Decoders for Simulated Windows Events and Custom Ingestion -->
+<!-- Location: /var/ossec/etc/decoders/custom_decoders.xml -->
+
+<!-- Base JSON Decoder for Windows Simulated Events -->
+<decoder name="windows_sim_json">
+  <prematch>^{\s*"EventID":|^{\s*"event_id":|^{\s*"source":\s*"windows_sim"</prematch>
+  <plugin_decoder>JSON_Decoder</plugin_decoder>
+</decoder>
+
+<!-- Decoder for Syslog format Windows Simulation -->
+<decoder name="windows_sim_syslog">
+  <program_name>WinSim|Sysmon|Security</program_name>
+</decoder>
+
+<decoder name="windows_sim_syslog_fields">
+  <parent>windows_sim_syslog</parent>
+  <regex>EventID=(\d+)\s+User=(\S+)\s+Image="([^"]+)"\s+CommandLine="([^"]+)"</regex>
+  <order>id, user, extra_data, system_name</order>
+</decoder>
+
+<decoder name="windows_sim_syslog_access">
+  <parent>windows_sim_syslog</parent>
+  <regex>EventID=10\s+SourceImage="([^"]+)"\s+TargetImage="([^"]+)"\s+GrantedAccess=(\S+)</regex>
+  <order>extra_data, system_name, status</order>
+</decoder>

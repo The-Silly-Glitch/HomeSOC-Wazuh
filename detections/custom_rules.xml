@@ -1,0 +1,83 @@
+<!-- Custom Detection Rules mapped to MITRE ATT&CK -->
+<!-- Location: /var/ossec/etc/rules/custom_rules.xml -->
+
+<group name="windows,windows_simulation,sysmon,endpoint,">
+
+  <!-- Rule 100001: Ingestion Base Rule -->
+  <rule id="100001" level="3">
+    <decoded_as>windows_sim_json</decoded_as>
+    <description>Simulated Windows Event Ingestion Base Rule</description>
+  </rule>
+
+  <!-- Rule 100002: MITRE T1059.001 - Command and Scripting Interpreter: PowerShell -->
+  <rule id="100002" level="8">
+    <if_sid>100001</if_sid>
+    <field name="CommandLine">(?i)-enc|-encodedcommand|frombase64string|downloadstring|iex\s*\(|bypass\s*-nop</field>
+    <mitre>
+      <id>T1059.001</id>
+    </mitre>
+    <description>Suspicious PowerShell Execution or Encoded Command Detected [T1059.001]</description>
+    <group>attack.execution,attack.t1059.001,</group>
+  </rule>
+
+  <!-- Rule 100003: MITRE T1053.005 - Scheduled Task/Job: Scheduled Task -->
+  <rule id="100003" level="7">
+    <if_sid>100001</if_sid>
+    <field name="EventID">^4698$|^106$</field>
+    <description>Persistence via Scheduled Task Creation Detected [T1053.005]</description>
+    <mitre>
+      <id>T1053.005</id>
+    </mitre>
+    <group>attack.persistence,attack.privilege_escalation,attack.t1053.005,</group>
+  </rule>
+
+  <!-- Rule 100004: MITRE T1078 - Valid Accounts -->
+  <rule id="100004" level="8">
+    <if_sid>100001</if_sid>
+    <field name="EventID">^4624$</field>
+    <field name="LogonType">^10$|^3$</field>
+    <field name="TargetUserName">(?i)administrator|root|admin</field>
+    <description>Suspicious Remote Privileged Account Logon Detected [T1078]</description>
+    <mitre>
+      <id>T1078</id>
+    </mitre>
+    <group>attack.initial_access,attack.defense_evasion,attack.t1078,</group>
+  </rule>
+
+  <!-- Rule 100005: MITRE T1003.001 - OS Credential Dumping: LSASS Memory -->
+  <rule id="100005" level="12">
+    <if_sid>100001</if_sid>
+    <field name="EventID">^10$</field>
+    <field name="TargetImage">(?i).*lsass\.exe</field>
+    <description>LSASS Memory Access - Potential Credential Dumping [T1003.001]</description>
+    <mitre>
+      <id>T1003.001</id>
+    </mitre>
+    <group>attack.credential_access,attack.t1003.001,</group>
+  </rule>
+
+  <!-- Rule 100006: MITRE T1082 - System Information Discovery -->
+  <rule id="100006" level="4">
+    <if_sid>100001</if_sid>
+    <field name="CommandLine">(?i)systeminfo|whoami\s*\/all|net\s*user|tasklist</field>
+    <description>System Information Discovery via Command Line [T1082]</description>
+    <mitre>
+      <id>T1082</id>
+    </mitre>
+    <group>attack.discovery,attack.t1082,</group>
+  </rule>
+
+</group>
+
+<group name="syscheck,custom_fim,">
+  <!-- Rule 100010: MITRE T1565.001 - Critical File Modification -->
+  <rule id="100010" level="7">
+    <if_group>syscheck</if_group>
+    <match>/monitored/|/etc/shadow|/etc/passwd</match>
+    <description>Critical Monitored Directory or System File Modified [T1565.001]</description>
+    <mitre>
+      <id>T1565.001</id>
+    </mitre>
+    <group>attack.defense_evasion,attack.t1565.001,</group>
+  </rule>
+</group>
