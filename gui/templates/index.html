@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HomeSOC Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <span class="logo">&#9670;</span>
+      <h1>HomeSOC</h1>
+    </div>
+    <button id="theme-toggle" aria-label="Toggle theme">
+      <span class="icon-light">&#9728;</span>
+      <span class="icon-dark">&#9790;</span>
+    </button>
+  </header>
+
+  <main>
+    <section class="grid">
+      <div class="card">
+        <h2>Status</h2>
+        <div id="status-list" class="status-list">Loading...</div>
+      </div>
+
+      <div class="card">
+        <h2>Services</h2>
+        <div id="service-list" class="status-list">Loading...</div>
+      </div>
+
+      <div class="card wide">
+        <h2>Recent Alerts</h2>
+        <div class="stat-row">
+          <div><strong id="total-alerts">-</strong> total alerts</div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>Time</th><th>Lvl</th><th>Rule</th><th>Agent</th><th>MITRE</th><th>Description</th></tr>
+          </thead>
+          <tbody id="recent-alerts"></tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Top MITRE Techniques</h2>
+        <ul id="mitre-list" class="plain-list"></ul>
+      </div>
+
+      <div class="card">
+        <h2>Severity Distribution</h2>
+        <ul id="severity-list" class="plain-list"></ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>HomeSOC Wazuh Lab &middot; Minimal local dashboard</p>
+  </footer>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

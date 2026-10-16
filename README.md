@@ -66,6 +66,10 @@ HomeSOC-Wazuh/
 │   ├── architecture.md          # In-depth architectural details
 │   ├── mitre_mapping.csv        # Comprehensive MITRE ATT&CK mapping table
 │   └── runbook.md               # SOC incident triage and investigation runbook
+├── gui/
+│   ├── app.py                   # Minimal Flask web dashboard
+│   ├── static/                  # CSS and JS
+│   └── templates/               # HTML templates
 ├── scripts/
 │   ├── alert_dashboard.py       # Terminal dashboard querying Wazuh API
 │   ├── entrypoint-agent.sh      # Agent container startup and auto-enrollment
@@ -147,12 +151,18 @@ docker exec -it wazuh.manager /var/ossec/bin/agent_control -l
 python3 scripts/windows_event_simulator.py --count 10 --technique T1059 --output syslog
 ```
 
-### 6. Run Test Automation & CLI Dashboard
+### 6. Run Test Automation & Dashboards
 ```bash
 pip install -r requirements.txt
 python3 scripts/test_alerts.py
 python3 scripts/alert_dashboard.py
 ```
+
+### 7. Launch the Minimal Web Dashboard
+```bash
+python3 gui/app.py
+```
+Open `http://localhost:8080`. Use the toggle in the header to switch between dark and light mode. The page auto-refreshes every 5 seconds.
 
 ---
 
